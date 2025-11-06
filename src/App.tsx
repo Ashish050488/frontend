@@ -20,9 +20,9 @@ interface IJob {
 }
 
 
-
-// --- Constants ---
 const API_URL = `${import.meta.env.VITE_API_URL}/api/jobs`;
+
+
 
 /**
  * Main Application Component
@@ -83,23 +83,33 @@ function Layout() {
 
 /**
  * Component to View Jobs (The Dashboard)
+ * ✅ NOW WITH PAGINATION
  */
 function JobViewer() {
   const [jobs, setJobs] = useState<IJob[]>([]);
-  // ✅ ADDED: State to hold the total job count
   const [totalJobs, setTotalJobs] = useState(0); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = async () => {
+  // ✅ ADDED: State for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // ✅ UPDATED: fetchJobs now takes a page number
+  const fetchJobs = async (pageToFetch: number) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(API_URL);
+      // Append the page query parameter
+      const response = await fetch(`${API_URL}?page=${pageToFetch}`);
       if (!response.ok) throw new Error('Failed to fetch jobs');
+      
       const data = await response.json();
+      
       setJobs(data.jobs);
-      setTotalJobs(data.totalJobs); // ✅ ADDED: Set the total job count from the API
+      setTotalJobs(data.totalJobs);
+      setTotalPages(data.totalPages); // Store total pages from API
+      setCurrentPage(data.currentPage); // Ensure state is in sync
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -107,9 +117,10 @@ function JobViewer() {
     }
   };
 
+  // ✅ UPDATED: useEffect now re-fetches when currentPage changes
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    fetchJobs(currentPage);
+  }, [currentPage]); // Re-run this effect when currentPage changes
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
@@ -120,16 +131,34 @@ function JobViewer() {
     }
   };
 
+  // ✅ ADDED: Pagination handler functions
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  // ✅ ADDED: Button styles for pagination
+  const pageButtonClass = "px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors";
+  const disabledButtonClass = "px-4 py-2 text-sm font-medium text-gray-500 bg-gray-200 rounded-lg cursor-not-allowed";
+
   if (loading) return <div className="text-center p-12 text-indigo-600 font-medium">Loading jobs...</div>;
   if (error) return <div className="text-center p-12 text-red-600">Error fetching data: {error}</div>;
 
   return (
     <div className="p-6 md:p-8">
-      {/* ✅ ADDED: Total job count display */}
       <div className="mb-6 pb-4 border-b border-gray-200">
         <h2 className="text-2xl font-semibold text-gray-800">
-          Showing {jobs.length} of {totalJobs} Total Jobs
+          {/* ✅ UPDATED: Show page count in heading */}
+          Showing Page {currentPage} of {totalPages}
         </h2>
+        <p className="text-sm text-gray-500">{totalJobs} Total Jobs Found</p>
       </div>
 
       {jobs.length === 0 ? (
@@ -168,26 +197,21 @@ function JobViewer() {
                 {/* Right Side: Details & Badges */}
                 <div className="shrink-0 md:w-1/3 md:text-right space-y-2">
                   
-                  {/* Row 1: Compensation */}
                   <div className="flex items-center md:justify-end space-x-2 text-sm text-gray-800">
                      <span className="font-medium text-gray-900 px-3 py-1 bg-yellow-100 rounded-full">
                         {job.Compensation && job.Compensation !== 'N/A' ? job.Compensation : 'Compensation N/A'}
                     </span>
                   </div>
 
-                  {/* Row 2: Contract, German */}
                   <div className="flex items-center md:justify-end space-x-2 pt-1">
-                    {/* Contract Type */}
                     <span className="px-3 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
                       {job.ContractType || 'Contract N/A'}
                     </span>
-                    {/* German Required Badge */}
                     <span className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full ${job.GermanRequired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                       {job.GermanRequired ? 'GERMAN' : 'ENGLISH'}
                     </span>
                   </div>
 
-                  {/* Row 3: Posted Date */}
                   <div className="text-xs text-gray-500 pt-1">
                     Posted: {formatDate(job.PostedDate)}
                   </div>
@@ -195,6 +219,31 @@ function JobViewer() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ✅ ADDED: Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-8 mt-8 border-t border-gray-200">
+          <button
+            onClick={handlePrevPage}
+            disabled={currentPage <= 1}
+            className={currentPage <= 1 ? disabledButtonClass : pageButtonClass}
+          >
+            Previous
+          </button>
+          
+          <span className="text-sm font-medium text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage >= totalPages}
+            className={currentPage >= totalPages ? disabledButtonClass : pageButtonClass}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
