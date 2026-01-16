@@ -3,11 +3,23 @@ import type { IJob } from '../types';
 interface Props {
   job: IJob;
   onFeedback?: (id: string, status: 'up' | 'down') => void;
-  isRejectedView?: boolean; // Changes button behavior for the rejected page
+  isRejectedView?: boolean;
   onRestore?: (id: string) => void;
+  
+  // ✅ NEW PROPS for Review Mode
+  isReviewMode?: boolean;
+  onDecision?: (id: string, decision: 'accept' | 'reject') => void;
 }
 
-export default function JobCard({ job, onFeedback, isRejectedView, onRestore }: Props) {
+export default function JobCard({ 
+  job, 
+  onFeedback, 
+  isRejectedView, 
+  onRestore,
+  isReviewMode,
+  onDecision 
+}: Props) {
+  
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     try {
@@ -32,6 +44,13 @@ export default function JobCard({ job, onFeedback, isRejectedView, onRestore }: 
              {job.Location} | {job.Department}
           </div>
           <div className="text-xs text-gray-400 pt-1">ID: {job.JobID}</div>
+          
+          {/* Show Confidence Score in Review Mode */}
+          {isReviewMode && (
+            <div className="mt-2 text-xs font-semibold text-indigo-600 bg-indigo-50 inline-block px-2 py-1 rounded">
+               AI Confidence: {(job.ConfidenceScore * 100).toFixed(0)}%
+            </div>
+          )}
         </div>
 
         {/* Right Side: Feedback & Badges */}
@@ -39,7 +58,25 @@ export default function JobCard({ job, onFeedback, isRejectedView, onRestore }: 
           
           {/* ACTION BUTTONS */}
           <div className="flex items-center md:justify-end space-x-2 mb-2">
-            {isRejectedView ? (
+            
+            {/* 1. Review Mode (Approve/Reject) */}
+            {isReviewMode ? (
+               <>
+                 <button 
+                   onClick={() => onDecision && onDecision(job._id, 'accept')}
+                   className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm transition-colors"
+                 >
+                   APPROVE
+                 </button>
+                 <button 
+                   onClick={() => onDecision && onDecision(job._id, 'reject')}
+                   className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded shadow-sm transition-colors"
+                 >
+                   REJECT
+                 </button>
+               </>
+            ) : isRejectedView ? (
+              // 2. Rejected View (Restore)
                <button 
                  onClick={() => onRestore && onRestore(job._id)}
                  className="text-sm text-indigo-600 font-bold hover:underline"
@@ -47,20 +84,21 @@ export default function JobCard({ job, onFeedback, isRejectedView, onRestore }: 
                  Restore Job ↩️
                </button>
             ) : (
+              // 3. Normal View (Thumbs Up/Down)
                <>
                  <button 
-                    onClick={() => onFeedback && onFeedback(job._id, 'up')}
-                    className={`p-2 rounded-full transition ${job.thumbStatus === 'up' ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-400 hover:bg-green-100 hover:text-green-600'}`}
-                    title="Thumbs Up"
+                   onClick={() => onFeedback && onFeedback(job._id, 'up')}
+                   className={`p-2 rounded-full transition ${job.thumbStatus === 'up' ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-400 hover:bg-green-100 hover:text-green-600'}`}
+                   title="Thumbs Up"
                  >
-                    👍
+                   👍
                  </button>
                  <button 
-                    onClick={() => onFeedback && onFeedback(job._id, 'down')}
-                    className="p-2 rounded-full bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-600 transition"
-                    title="Thumbs Down (Hide)"
+                   onClick={() => onFeedback && onFeedback(job._id, 'down')}
+                   className="p-2 rounded-full bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-600 transition"
+                   title="Thumbs Down (Hide)"
                  >
-                    👎
+                   👎
                  </button>
                </>
             )}

@@ -2,15 +2,18 @@ export interface IJob {
   _id: string;
   JobID: string;
   JobTitle: string;
-  ApplicationURL: string;
   Company: string;
   Location: string;
-  Department: string;
-  GermanRequired: boolean;
+  ApplicationURL: string;
   PostedDate: string | null;
-  ContractType: string;
-  ExperienceLevel: string;
-  Compensation: string;
-  sourceSite: string;
-  thumbStatus?: 'up' | 'down' | null; // New field for feedback
+  Description: string;
+  GermanRequired?: boolean;
+  thumbStatus?: 'up' | 'down' | null;
+  Department?: string;
+  ContractType?: string;
+  sourceSite?: string;
+  
+  // ✅ New Fields from Backend
+  Status?: 'pending_review' | 'active' | 'rejected';
+  ConfidenceScore: number;
 }

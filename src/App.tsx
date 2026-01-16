@@ -1,10 +1,10 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard'; // This is your Job List
-import CompanyDirectory from './pages/CompanyDirectory'; // New Page
+import Dashboard from './pages/Dashboard'; 
+import CompanyDirectory from './pages/CompanyDirectory'; 
 import AddJob from './pages/AddJob';
 import RejectedJobs from './pages/RejectedJobs';
+import ReviewQueue from './pages/ReviewQueue'; // ✅ Import
 
 export default function App() {
   return (
@@ -18,6 +18,10 @@ export default function App() {
           <Route path="jobs" element={<Dashboard />} />
           
           <Route path="add" element={<AddJob />} />
+          
+          {/* ✅ NEW: Review Route */}
+          <Route path="review" element={<ReviewQueue />} />
+
           <Route path="rejected" element={<RejectedJobs />} />
         </Route>
       </Routes>
