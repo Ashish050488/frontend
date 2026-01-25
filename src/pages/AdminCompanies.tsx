@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, Building2, Plus, MapPin } from 'lucide-react';
+import React, { useState, } from 'react';
+import { Trash2, Plus, MapPin } from 'lucide-react';
 
 interface Company {
   _id: string;
