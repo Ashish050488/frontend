@@ -15,6 +15,8 @@ import ReviewQueue from './pages/ReviewQueue';
 import AdminCompanies from './pages/AdminCompanies';
 import AddJob from './pages/AddJob';
 import RejectedJobs from './pages/RejectedJobs';
+import AdminDashboard from './pages/AdminDashboard';
+
 
 export default function App() {
   return (
@@ -35,6 +37,7 @@ export default function App() {
             <Route element={<ProtectedRoute requireAdmin={true} />}>
                 <Route path="review" element={<ReviewQueue />} />
                 <Route path="admin/companies" element={<AdminCompanies />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="add" element={<AddJob />} />
                 <Route path="rejected" element={<RejectedJobs />} />
             </Route>

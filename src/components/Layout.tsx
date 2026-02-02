@@ -18,7 +18,8 @@ export default function Layout() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex justify-between items-center">
           
           {/* LOGO SECTION: Redirects based on Role */}
-          <Link to={isAdmin ? "/review" : "/"} className="flex items-center gap-2 group">
+          {/* ✅ UPDATED: Admin logo now goes to /dashboard */}
+          <Link to={isAdmin ? "/dashboard" : "/"} className="flex items-center gap-2 group">
              <div className={`${isAdmin ? 'bg-red-600' : 'bg-blue-600'} text-white p-1.5 rounded-lg transition-colors`}>
                 {isAdmin ? <ShieldCheck className="w-5 h-5" /> : <Briefcase className="w-5 h-5" />}
              </div>
@@ -33,6 +34,10 @@ export default function Layout() {
             {isAdmin ? (
                 // 🔒 ADMIN MENU (Only visible to Admins)
                 <div className="flex gap-6 mr-4">
+                    {/* ✅ ADDED: Dashboard Link */}
+                    <Link to="/dashboard" className={location.pathname === '/dashboard' ? activeClass : inactiveClass}>
+                        Dashboard
+                    </Link>
                     <Link to="/review" className={location.pathname === '/review' ? activeClass : inactiveClass}>
                         Review
                     </Link>
