@@ -16,7 +16,9 @@ export default function Dashboard() {
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [activeCompanies, setActiveCompanies] = useState<CompanyStats[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  useEffect(() => {
+    document.title = "Browse English-Speaking Jobs in Germany";
+  }, []);
   // Get currently selected company from URL
   const selectedCompany = searchParams.get('company') || '';
 

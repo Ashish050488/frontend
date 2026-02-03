@@ -7,6 +7,7 @@ import DirectoryCard from '../components/DirectoryCard';
 import type { IJob, ICompany } from '../types';
 
 export default function Home() {
+   
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [companies, setCompanies] = useState<ICompany[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +16,10 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [subMessage, setSubMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
+ useEffect(() => {
+    document.title = "English-Speaking Jobs in Germany | No German Required";
+  }, []);
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
