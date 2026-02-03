@@ -7,9 +7,14 @@ export default function Signup() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // ✅ COMPLETE LIST OF COUNTRIES
+  // Priority at top, then alphabetical
   const countries = [
     // --- Priority Markets ---
     "Germany", "India", "United Kingdom", "United States", "Canada", "Australia",
+    // --- Divider ---
+    "--------------------------------",
+    // --- All Countries A-Z ---
     "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
     "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
     "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (DRC)", "Congo (Republic)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
@@ -70,12 +75,36 @@ export default function Signup() {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Thanks for signing up! 🎉</h2>
-            <p className="text-lg text-slate-600 leading-relaxed mb-8">
-                You’re now on our <strong>early access list</strong> for English-speaking jobs in Germany. 
-                We’re currently setting up our email alerts. As soon as we go live, you’ll be among the first to hear from us.
+            
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-4">You’re on the list 🎉</h2>
+            <p className="text-lg text-slate-600 leading-relaxed mb-6">
+                We’ll notify you when new English-speaking jobs in Germany are added.
             </p>
-            <Link to="/" className="inline-block bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all">
+
+            {/* What to expect box */}
+            <div className="bg-slate-50 rounded-xl p-5 mb-8 text-left border border-slate-100">
+                <p className="font-bold text-slate-900 mb-3 text-sm uppercase tracking-wide">What to expect:</p>
+                <ul className="space-y-3 text-slate-700">
+                    <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                        <span>Curated & reviewed roles</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                        <span>No spam — unsubscribe anytime</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                        <span>First emails launching soon</span>
+                    </li>
+                </ul>
+            </div>
+
+            <p className="text-sm text-slate-400 italic mb-8">
+                Thanks for supporting an early-stage project 💛
+            </p>
+
+            <Link to="/" className="inline-block bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg w-full sm:w-auto">
                 Back to Jobs
             </Link>
         </div>
@@ -180,7 +209,7 @@ export default function Signup() {
                         <option 
                             key={country} 
                             value={country} 
-                            disabled={country.startsWith("---")} // Disable separator
+                            disabled={country.startsWith("---")} 
                             className={country.startsWith("---") ? "text-slate-400 font-bold bg-slate-50" : ""}
                         >
                             {country}
