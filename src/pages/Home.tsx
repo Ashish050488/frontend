@@ -7,28 +7,25 @@ import DirectoryCard from '../components/DirectoryCard';
 import type { IJob, ICompany } from '../types';
 
 export default function Home() {
-   
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [companies, setCompanies] = useState<ICompany[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // --- NEWSLETTER STATE ---
+  // Newsletter State
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [subMessage, setSubMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
- useEffect(() => {
-    document.title = "English-Speaking Jobs in Germany | No German Required";
-  }, []);
-  
+
   useEffect(() => {
+    // ✅ Update Page Title
+    document.title = "English-Speaking Jobs in Germany | No German Required";
+
     const fetchData = async () => {
       try {
-        // 1. Fetch Latest Jobs (limit 9)
         const jobRes = await fetch('/api/jobs?limit=9');
         const jobData = await jobRes.json();
         setJobs(jobData.jobs || []);
 
-        // 2. Fetch Companies (Show top 8 for the showcase)
         const dirRes = await fetch('/api/jobs/directory');
         const dirData = await dirRes.json();
         if (Array.isArray(dirData)) {
@@ -40,7 +37,6 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // --- NEWSLETTER HANDLER ---
   const handleSubscribe = async (e: FormEvent) => {
       e.preventDefault();
       if(!email) return;
@@ -48,10 +44,10 @@ export default function Home() {
       setSubMessage(null);
 
       try {
-          const res = await fetch('/api/users/subscribe', {
+          const res = await fetch('/api/auth/talent-pool', { // Using Talent Pool endpoint
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, categories: ['Tech', 'Business'], frequency: 'weekly' })
+              body: JSON.stringify({ email, name: email.split('@')[0], domain: 'General', location: 'Unknown' }) 
           });
           
           if(res.ok) {
@@ -70,20 +66,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       
-      {/* 1. HERO SECTION */}
+      {/* 1. ✅ UPDATED HERO SECTION */}
       <div className="bg-[#0f172a] text-white py-24 px-6 text-center border-b border-slate-800">
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
-            English Speaking Jobs in  <span className="text-[#3b82f6]">Germany</span>
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+             English-Speaking Jobs in Germany <br />
+             <span className="text-[#3b82f6]">No German Required</span>
         </h1>
-        <p className="text-lg text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Curated english friendly roles from real company carrer pages. <br/> No recruiters, No <span className="text-[#3b82f6]">German</span> requied
+        <p className="text-lg text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
+            Germany has thousands of English-speaking roles — but they’re hard to find. We curate and review jobs where German is not mandatory, so you don’t waste time.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/directory" className="bg-[#1c54b2] hover:bg-blue-700 text-white px-8 py-3.5 rounded-lg font-bold transition-all shadow-lg shadow-blue-900/20">
-                Browse Companies
+            {/* Primary CTA */}
+            <Link to="/signup" className="bg-[#1c54b2] hover:bg-blue-700 text-white px-8 py-3.5 rounded-lg font-bold transition-all shadow-lg shadow-blue-900/20">
+                Get Job Alerts (Free)
             </Link>
-            <Link to="/jobs" className="bg-white text-slate-900 hover:bg-slate-50 px-8 py-3.5 rounded-lg font-bold transition-all">
-                View Latest Jobs
+            {/* Secondary CTA */}
+            <Link to="/jobs" className="bg-white text-slate-900 hover:bg-slate-50 px-8 py-3.5 rounded-lg font-bold transition-all border border-transparent hover:border-slate-300">
+                Browse Jobs →
             </Link>
         </div>
       </div>
@@ -93,7 +92,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-12">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                    Trusted companies hiring English-speaking roles in Germany
+                    Trusted companies hiring English-speaking roles
                 </p>
             </div>
             
@@ -111,9 +110,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 3. ✅ UPDATED NEWSLETTER SECTION (Better UI) */}
+      {/* 3. NEWSLETTER SECTION */}
       <div className="bg-[#1c54b2] text-white py-20 relative overflow-hidden">
-        {/* Background Pattern Decoration */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
             <div className="absolute -top-24 -left-24 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
             <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
@@ -150,21 +148,14 @@ export default function Home() {
                 </button>
             </form>
 
-            {/* Messages */}
             {subMessage && (
                 <div className={`mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold shadow-sm animate-fade-in-up ${
-                    subMessage.type === 'success' 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-red-500 text-white'
+                    subMessage.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                 }`}>
                     {subMessage.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                     {subMessage.text}
                 </div>
             )}
-            
-            <p className="text-xs text-blue-200/80 mt-8">
-                Unsubscribe at any time. We respect your inbox.
-            </p>
         </div>
       </div>
 

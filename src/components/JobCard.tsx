@@ -14,11 +14,24 @@ interface Props {
 export default function JobCard({ job, isReviewMode, isRejectedView, onDecision, onRestore, onFeedback }: Props) {
   const [imageError, setImageError] = useState(false);
 
-  // Helper to format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Recently';
-    return new Date(dateString).toLocaleDateString('en-DE', { month: 'short', day: 'numeric' });
+  // ✅ UPDATED: Returns null if date is missing (so we can hide the badge)
+  const getRelativeTime = (dateString: string | null) => {
+    if (!dateString) return null; // Hide badge
+    
+    const posted = new Date(dateString);
+    if (isNaN(posted.getTime())) return null; // Hide badge if invalid date
+
+    const now = new Date();
+    const diffTime = now.getTime() - posted.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) return "Added today";
+    if (diffDays === 1) return "Added 1 day ago";
+    return `Added ${diffDays} days ago`;
   };
+
+  // Calculate time once to use in JSX
+  const relativeTime = getRelativeTime(job.PostedDate);
 
   // Helper to get domain for logo
   const getDomain = (url: string) => {
@@ -38,7 +51,7 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
       
       <div className="flex gap-4 items-start">
         {/* Logo */}
-        <div className="h-12 w-12 flex-shrink-0 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1">
+        <div className="h-12 w-12 shrink-0 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1">
           {!imageError ? (
             <img 
               src={`https://logo.clearbit.com/${getDomain(job.ApplicationURL)}`} 
@@ -57,7 +70,6 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
         <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
                 <div>
-                    {/* ✅ FIXED: TITLE IS NOW A LINK (Even in Admin Mode) */}
                     <a 
                         href={job.ApplicationURL} 
                         target="_blank" 
@@ -76,13 +88,17 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
                         <span className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5" /> {job.Location}
                         </span>
-                        <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" /> {formatDate(job.PostedDate)}
-                        </span>
+                        
+                        {/* ✅ CONDITIONAL RENDER: Only show if we have a valid time string */}
+                        {relativeTime && (
+                            <span className="flex items-center gap-1 text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                <Calendar className="w-3.5 h-3.5" /> {relativeTime}
+                            </span>
+                        )}
                     </div>
                 </div>
 
-                {/* Confidence Score (Visible only in Admin Review) */}
+                {/* Confidence Score (Admin Only) */}
                 {isReviewMode && (
                     <div className={`px-2 py-1 rounded text-xs font-bold ${
                         job.ConfidenceScore > 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
@@ -92,12 +108,10 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
                 )}
             </div>
 
-            {/* Snippet / Description Preview */}
             <p className="mt-3 text-sm text-slate-600 line-clamp-2">
                 {job.Description.substring(0, 180)}...
             </p>
 
-            {/* Tags */}
             <div className="flex gap-2 mt-3">
                 {job.GermanRequired === false && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
@@ -113,10 +127,9 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
         </div>
       </div>
 
-      {/* --- ACTION BAR (Dynamic based on Mode) --- */}
+      {/* --- ACTION BAR --- */}
       <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
         
-        {/* 1. REVIEW MODE ACTIONS (Admin) */}
         {isReviewMode && onDecision ? (
             <div className="flex gap-3 w-full">
                 <button 
@@ -132,10 +145,7 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
                     <Check className="w-4 h-4" /> Approve
                 </button>
             </div>
-        ) : 
-
-        /* 2. REJECTED MODE ACTIONS (Admin Trash) */
-        isRejectedView && onRestore ? (
+        ) : isRejectedView && onRestore ? (
             <div className="w-full">
                 <button 
                     onClick={() => onRestore(job._id)}
@@ -144,10 +154,7 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
                     <Undo className="w-4 h-4" /> Restore to Queue
                 </button>
             </div>
-        ) : 
-
-        /* 3. PUBLIC USER MODE (Feedback) */
-        (
+        ) : (
             <div className="flex w-full justify-between items-center">
                  <a 
                     href={job.ApplicationURL} 
@@ -158,7 +165,6 @@ export default function JobCard({ job, isReviewMode, isRejectedView, onDecision,
                     View Job <ExternalLink className="w-3.5 h-3.5" />
                 </a>
 
-                {/* Thumbs Up/Down for User Feedback */}
                 <div className="flex gap-2">
                     <button 
                         onClick={() => onFeedback && onFeedback(job._id, 'down')}
