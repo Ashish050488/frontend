@@ -20,14 +20,15 @@ export default function DirectoryCard({ company }: Props) {
 
   // External Link Logic
   const handleVisit = () => {
-    // Determine the best URL
-    let url = `https://${company.domain}`;
-    // If we scraped it, we might know the career page, but general domain is safer for Manual entries
-    if (!url.includes('/careers') && !url.includes('/jobs')) {
-        url += '/careers'; // Smart guess
-    }
-    window.open(url, '_blank');
-  };
+  let url = (company.domain || '').trim();
+
+  // If it's missing http/https, add https://
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+
+  window.open(url, '_blank');
+};
 
   return (
     <div 
