@@ -28,7 +28,7 @@ export default function CompanyCard({ company }: Props) {
     } else {
         // External: Go to their website
         // We assume domain is clean (e.g., "google.com"), so we add https://
-        window.open(`https://${company.domain}`, '_blank');
+        window.open(`${company.domain}`, '_blank');
     }
   };
 
