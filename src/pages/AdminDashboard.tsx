@@ -1,133 +1,61 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Server, Database, Cpu, ClipboardList, CheckCircle, RefreshCw } from 'lucide-react';
+import { Server, Database, Cpu, ClipboardList, CheckCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import { Container, PageHeader, Button, StatCard } from '../components/ui';
 
-interface DailyStats {
-  connectedSources: number;
-  jobsScraped: number;
-  jobsSentToAI: number;
-  jobsPendingReview: number;
-  jobsPublished: number;
-}
+interface DailyStats { connectedSources: number; jobsScraped: number; jobsSentToAI: number; jobsPendingReview: number; jobsPublished: number; }
 
 export default function AdminDashboard() {
-  const { token } = useAuth(); // Ensure you have token for auth
+  const { token } = useAuth();
   const [stats, setStats] = useState<DailyStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Fetch from our new independent route
-      const res = await fetch('/api/analytics/daily', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to fetch analytics:", error);
-    } finally {
-      setLoading(false);
-    }
+      const r = await fetch('/api/analytics/daily', { headers: { 'Authorization': `Bearer ${token}` } });
+      const d = await r.json(); setStats(d);
+    } catch (e) { console.error('Failed to fetch analytics:', e); } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchStats();
-  }, [token]);
+  useEffect(() => { fetchStats(); }, [token]);
+
+  const STATS = [
+    { icon: <Server size={18} />, value: stats?.connectedSources ?? 0, label: 'Career Pages', accent: false },
+    { icon: <Database size={18} />, value: stats?.jobsScraped ?? 0, label: 'Raw Data (24h)', accent: false },
+    { icon: <Cpu size={18} />, value: stats?.jobsSentToAI ?? 0, label: 'AI Processed', accent: false },
+    { icon: <ClipboardList size={18} />, value: stats?.jobsPendingReview ?? 0, label: 'Needs Review', accent: true },
+    { icon: <CheckCircle size={18} />, value: stats?.jobsPublished ?? 0, label: 'Live Jobs', accent: false },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-            <div>
-                <h1 className="text-3xl font-extrabold text-slate-900">System Analytics</h1>
-                <p className="text-slate-500 mt-1">Real-time metrics for today's scraper run.</p>
-            </div>
-            <div className="flex gap-3">
-                <button onClick={fetchStats} className="p-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors">
-                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-                <Link to="/review" className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">
-                    Go to Review Queue
-                </Link>
-            </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            
-            {/* 1. Connected Sources */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl mb-4">
-                    <Server className="w-8 h-8" />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 mb-1">
-                    {stats?.connectedSources || 0}
-                </h3>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">Career Pages</p>
-            </div>
-
-            {/* 2. Jobs Scraped */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-                <div className="p-3 bg-slate-100 text-slate-600 rounded-xl mb-4">
-                    <Database className="w-8 h-8" />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 mb-1">
-                    {stats?.jobsScraped || 0}
-                </h3>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">Raw Data (24h)</p>
-            </div>
-
-            {/* 3. Sent to AI */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-                <div className="p-3 bg-purple-50 text-purple-600 rounded-xl mb-4">
-                    <Cpu className="w-8 h-8" />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 mb-1">
-                    {stats?.jobsSentToAI || 0}
-                </h3>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">AI Processed</p>
-            </div>
-
-            {/* 4. Pending Review */}
-            <div className="bg-white p-6 rounded-2xl border border-orange-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-orange-500"></div>
-                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl mb-4">
-                    <ClipboardList className="w-8 h-8" />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 mb-1">
-                    {stats?.jobsPendingReview || 0}
-                </h3>
-                <p className="text-sm font-bold text-orange-400 uppercase tracking-wider">Manual Review</p>
-            </div>
-
-            {/* 5. Published */}
-            <div className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
-                <div className="p-3 bg-green-50 text-green-600 rounded-xl mb-4">
-                    <CheckCircle className="w-8 h-8" />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 mb-1">
-                    {stats?.jobsPublished || 0}
-                </h3>
-                <p className="text-sm font-bold text-green-400 uppercase tracking-wider">Live Jobs</p>
-            </div>
-
-        </div>
-
-        {/* Additional Info / Charts placeholder */}
-        <div className="mt-10 bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">System Status</h3>
-            <p className="text-slate-500">
-                The scraper runs automatically. Metrics reset daily at 00:00 UTC. 
-                Data shown is for <strong>{new Date().toLocaleDateString()}</strong>.
-            </p>
-        </div>
-        
+    <div style={{ background: 'var(--paper)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--surface-solid)', borderBottom: '1.25px solid var(--border)', padding: '32px 0' }}>
+        <Container>
+          <PageHeader label="System Analytics" title="Daily Overview"
+            subtitle={`Metrics for ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+            actions={
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button variant="ghost" size="sm" onClick={fetchStats} loading={loading}><RefreshCw size={13} />Refresh</Button>
+                <Link to="/review"><Button size="sm">Review Queue <ArrowRight size={13} /></Button></Link>
+              </div>
+            } />
+        </Container>
       </div>
+      <Container style={{ padding: '32px 24px' }}>
+        {loading
+          ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14 }}>{[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton" style={{ height: 140 }} />)}</div>
+          : <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14 }}>
+            {STATS.map(s => <StatCard key={s.label} icon={s.icon} value={s.value} label={s.label} accent={s.accent} />)}
+          </div>}
+        <div style={{ marginTop: 24, padding: '24px', background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 14 }}>
+          <p className="font-sketch" style={{ fontSize: '1rem', color: 'var(--primary)', marginBottom: 10 }}>System Status</p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--muted-ink)', lineHeight: 1.7 }}>
+            The scraper runs automatically. Metrics reset daily at 00:00 UTC. Data shown is for <strong style={{ color: 'var(--ink)' }}>{new Date().toLocaleDateString()}</strong>.
+          </p>
+        </div>
+      </Container>
     </div>
   );
 }

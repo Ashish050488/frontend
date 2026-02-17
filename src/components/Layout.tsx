@@ -1,106 +1,123 @@
+import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Briefcase, LogOut, User, ShieldCheck } from 'lucide-react';
+import { Briefcase, LogOut, User, ShieldCheck, Menu, X, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import Footer from './Footer'; // ✅ Import the new Footer
+import { useTheme } from '../theme/ThemeProvider';
+import { BRAND } from '../theme/brand';
+import Footer from './Footer';
+import { Button, Badge } from './ui';
 
 export default function Layout() {
-  const location = useLocation();
+  const loc = useLocation();
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
-  
-  const activeClass = "text-slate-900 font-bold border-b-2 border-slate-900 pb-0.5";
-  const inactiveClass = "text-slate-500 hover:text-slate-900 font-medium transition-colors";
+  const { mode, toggle } = useTheme();
+  const [open, setOpen] = useState(false);
+
+  const active = (path: string) => loc.pathname === path;
+  const navLink = (path: string, label: string) => (
+    <Link
+      to={path}
+      onClick={() => setOpen(false)}
+      className={`nav-tab marker-hover${active(path) ? ' active' : ''}`}
+      style={{
+        color: active(path) ? 'var(--ink)' : 'var(--muted-ink)',
+      }}
+      onMouseEnter={e => !active(path) && ((e.target as HTMLElement).style.color = 'var(--ink)')}
+      onMouseLeave={e => !active(path) && ((e.target as HTMLElement).style.color = 'var(--muted-ink)')}
+    >
+      {label}
+    </Link>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col"> 
-      {/* Added flex-col to keep footer at bottom */}
-      
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex justify-between items-center">
-          
-          {/* LOGO SECTION: Redirects based on Role */}
-          {/* ✅ UPDATED: Admin logo now goes to /dashboard */}
-          <Link to={isAdmin ? "/dashboard" : "/"} className="flex items-center gap-2 group">
-             <div className={`${isAdmin ? 'bg-red-600' : 'bg-blue-600'} text-white p-1.5 rounded-lg transition-colors`}>
-                {isAdmin ? <ShieldCheck className="w-5 h-5" /> : <Briefcase className="w-5 h-5" />}
-             </div>
-             <span className="text-xl font-bold text-slate-900 tracking-tight">
-                {isAdmin ? "Admin Panel" : "English Jobs"}
-             </span>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* NAV */}
+      <nav className="nav-blur sketch-surface" style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1.25px solid var(--ink-border, var(--border))' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Logo */}
+          <Link to={isAdmin ? '/dashboard' : '/'} style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: 8,
+              background: isAdmin ? 'var(--danger-soft)' : 'var(--primary-soft)',
+              border: `1.25px solid ${isAdmin ? 'var(--danger)' : 'var(--primary)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {isAdmin ? <ShieldCheck size={14} color="var(--danger)" /> : <Briefcase size={14} color="var(--primary)" />}
+            </div>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em' }}>
+              {BRAND.appName.replace('Jobs', '')}<span className="font-sketch" style={{ color: 'var(--primary)', fontSize: '1.2rem' }}>Jobs</span>
+            </span>
           </Link>
-          
-          <div className="flex gap-6 text-sm items-center">
-            
-            {/* NAVIGATION LINKS */}
+
+          {/* Desktop links */}
+          <div className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
             {isAdmin ? (
-                // 🔒 ADMIN MENU (Only visible to Admins)
-                <div className="flex gap-6 mr-4">
-                    {/* ✅ ADDED: Dashboard Link */}
-                    <Link to="/dashboard" className={location.pathname === '/dashboard' ? activeClass : inactiveClass}>
-                        Dashboard
-                    </Link>
-                    <Link to="/review" className={location.pathname === '/review' ? activeClass : inactiveClass}>
-                        Review
-                    </Link>
-                    <Link to="/admin/companies" className={location.pathname === '/admin/companies' ? activeClass : inactiveClass}>
-                        Directory
-                    </Link>
-                    <Link to="/add" className={location.pathname === '/add' ? activeClass : inactiveClass}>
-                        Add Job
-                    </Link>
-                    <Link to="/rejected" className={location.pathname === '/rejected' ? activeClass : inactiveClass}>
-                        Trash
-                    </Link>
-                </div>
+              <>{navLink('/dashboard', 'Dashboard')}{navLink('/review', 'Review')}{navLink('/admin/companies', 'Directory')}{navLink('/add', 'Add Job')}{navLink('/rejected', 'Trash')}</>
             ) : (
-                // 🌍 PUBLIC MENU (Visible to Users/Guests)
-                <div className="flex gap-6 mr-4">
-                    <Link to="/directory" className={location.pathname === '/directory' ? activeClass : inactiveClass}>
-                        Companies
-                    </Link>
-                    <Link to="/jobs" className={location.pathname === '/jobs' ? activeClass : inactiveClass}>
-                        Jobs
-                    </Link>
-                </div>
-            )}
-            
-            {/* AUTH STATUS SECTION */}
-            {isAuthenticated ? (
-                <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
-                    <span className="text-slate-600 font-medium flex items-center gap-2">
-                        <User className="w-4 h-4" /> {user?.name}
-                        {isAdmin && (
-                            <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded border border-red-200 font-bold uppercase tracking-wider">
-                                Admin
-                            </span>
-                        )}
-                    </span>
-                    <button 
-                        onClick={logout} 
-                        className="text-red-500 hover:text-red-700 font-medium text-xs flex items-center gap-1 transition-colors" 
-                        title="Log Out"
-                    >
-                        <LogOut className="w-3 h-3" />
-                    </button>
-                </div>
-            ) : (
-                <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
-                    <Link to="/login" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">
-                        Log in
-                    </Link>
-                    <Link to="/signup" className="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-sm">
-                        Sign up
-                    </Link>
-                </div>
+              <>{navLink('/directory', 'Companies')}{navLink('/jobs', 'Browse Jobs')}</>
             )}
           </div>
+
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Theme toggle */}
+            <button
+              onClick={toggle}
+              className="sketch-ink"
+              style={{
+                width: 34, height: 34, borderRadius: 8, border: '1.25px solid var(--ink-border, var(--border))',
+                background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--muted-ink)', transition: 'all 0.22s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--ink-border, var(--border))'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--muted-ink)'; }}
+              title={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {mode === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+
+            {/* Auth */}
+            {isAuthenticated ? (
+              <div className="hidden md:flex" style={{ alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--muted-ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <User size={13} /> {user?.name}
+                  {isAdmin && <Badge variant="red" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>ADMIN</Badge>}
+                </span>
+                <button onClick={logout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-ink)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 5, transition: 'color 0.2s', fontFamily: 'inherit', fontWeight: 600 }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted-ink)')}>
+                  <LogOut size={13} /> Logout
+                </button>
+              </div>
+            ) : (
+              <div className="hidden md:flex" style={{ alignItems: 'center', gap: 8 }}>
+                <Link to="/login"><Button variant="ghost" size="sm">Log in</Button></Link>
+                <Link to="/signup"><Button size="sm">Get alerts</Button></Link>
+              </div>
+            )}
+
+            <button className="md:hidden sketch-ink" onClick={() => setOpen(!open)} style={{ background: 'none', border: '1.25px solid var(--ink-border, var(--border))', borderRadius: 7, padding: 6, cursor: 'pointer', color: 'var(--ink)', display: 'flex', alignItems: 'center' }}>
+              {open ? <X size={17} /> : <Menu size={17} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile menu */}
+        {open && (
+          <div style={{ borderTop: '1.25px solid var(--ink-border, var(--border))', background: 'var(--surface-solid)', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {isAdmin
+              ? ['/dashboard', '/review', '/admin/companies', '/add', '/rejected'].map(p => navLink(p, p.split('/').filter(Boolean).pop()!))
+              : [navLink('/directory', 'Companies'), navLink('/jobs', 'Browse Jobs')]}
+            <div style={{ borderTop: '1.25px solid var(--ink-border, var(--border))', paddingTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+              {isAuthenticated
+                ? <button onClick={logout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: '0.88rem', fontFamily: 'inherit', fontWeight: 600 }}>Logout</button>
+                : <><Link to="/login" onClick={() => setOpen(false)}><Button variant="ghost" size="sm">Log in</Button></Link><Link to="/signup" onClick={() => setOpen(false)}><Button size="sm">Sign up</Button></Link></>
+              }
+            </div>
+          </div>
+        )}
       </nav>
 
-      <main className="grow">
-        <Outlet />
-      </main>
-
-      {/* Footer Component */}
+      <main style={{ flex: 1 }}><Outlet /></main>
       <Footer />
     </div>
   );

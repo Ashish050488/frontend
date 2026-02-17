@@ -17,6 +17,7 @@ export interface IJob {
 }
 
 export interface ICompany {
+  _id?: string;
   companyName: string;
   openRoles: number;
   cities: string[];

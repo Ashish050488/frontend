@@ -1,70 +1,48 @@
 import { useState, useEffect } from 'react';
 import type { IJob } from '../types';
 import JobCard from '../components/JobCard';
+import { Trash2, RefreshCw } from 'lucide-react';
+import { Container, PageHeader, Button, EmptyState } from '../components/ui';
 
 export default function RejectedJobs() {
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchRejectedJobs();
-  }, []);
+  useEffect(() => { fetchRejected(); }, []);
 
-  const fetchRejectedJobs = async () => {
+  const fetchRejected = async () => {
     setLoading(true);
     try {
-        const token = localStorage.getItem('token');
-        // Assuming your backend route for this is protected, pass the token
-        const res = await fetch('/api/jobs/rejected', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setJobs(Array.isArray(data) ? data : []);
-    } catch (e) {
-        console.error(e);
-    } finally {
-        setLoading(false);
-    }
+      const token = localStorage.getItem('token');
+      const r = await fetch('/api/jobs/rejected', { headers: { 'Authorization': `Bearer ${token}` } });
+      const d = await r.json(); setJobs(Array.isArray(d) ? d : []);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
   const handleRestore = async (id: string) => {
-      // 1. Optimistic remove from list
-      setJobs(prev => prev.filter(j => j._id !== id));
-      
-      // 2. API Call
-      const token = localStorage.getItem('token');
-      await fetch(`/api/jobs/${id}/feedback`, {
-          method: 'PATCH',
-          headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: null }) // Reset status to null
-      });
+    setJobs(p => p.filter(j => j._id !== id));
+    const token = localStorage.getItem('token');
+    await fetch(`/api/jobs/${id}/feedback`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: null }) });
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-6 pb-4 border-b border-red-100 flex justify-between items-center">
-            <div>
-                <h2 className="text-2xl font-bold text-red-700">🗑️ Rejected Jobs</h2>
-                <p className="text-sm text-slate-500">{jobs.length} jobs in trash.</p>
-            </div>
-            <button onClick={fetchRejectedJobs} className="text-red-600 hover:underline text-sm">Refresh</button>
-        </div>
-
-        {loading ? <p className="text-center py-10">Loading...</p> : (
-            <div className="space-y-4">
-                {jobs.map(job => (
-                    <JobCard 
-                        key={job._id} 
-                        job={job} 
-                        isRejectedView={true} 
-                        onRestore={handleRestore} 
-                    />
-                ))}
-            </div>
-        )}
+    <div style={{ background: 'var(--paper)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--surface-solid)', borderBottom: '1.25px solid var(--border)', padding: '32px 0' }}>
+        <Container size="lg">
+          <PageHeader label="Admin" title={<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Trash2 size={22} color="var(--danger)" />Rejected Jobs</span>}
+            subtitle={`${jobs.length} jobs in trash`}
+            actions={<Button variant="ghost" size="sm" onClick={fetchRejected} loading={loading}><RefreshCw size={13} />Refresh</Button>} />
+        </Container>
+      </div>
+      <Container size="lg" style={{ padding: '32px 24px' }}>
+        {loading
+          ? <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 148 }} />)}</div>
+          : jobs.length === 0
+            ? <EmptyState icon={<Trash2 size={32} />} title="Trash is empty" body="All good — no rejected jobs here." />
+            : <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {jobs.map(j => <JobCard key={j._id} job={j} isRejectedView onRestore={handleRestore} />)}
+            </div>}
+      </Container>
     </div>
   );
 }

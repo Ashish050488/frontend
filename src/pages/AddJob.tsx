@@ -1,97 +1,58 @@
 import React, { useState } from 'react';
 import type { FormEvent } from 'react';
+import { PlusCircle } from 'lucide-react';
+import { Container, PageHeader, Button, FormField, Input, Select, Textarea, Alert, Card } from '../components/ui';
 
 const API_URL = `/api/jobs`;
 
 export default function AddJob() {
-  const [formData, setFormData] = useState({
-    JobTitle: '', ApplicationURL: '', Company: '', Location: 'Germany',
-    Department: '', ContractType: 'Full-time', ExperienceLevel: '',
-    PostedDate: '', Description: ''
-  });
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [fd, setFd] = useState({ JobTitle: '', ApplicationURL: '', Company: '', Location: 'Germany', Department: '', ContractType: 'Full-time', ExperienceLevel: '', PostedDate: '', Description: '' });
+  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const change = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setFd(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
-    
+  const submit = async (e: FormEvent) => {
+    e.preventDefault(); setMsg(null); setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // ✅ Added Auth Header
-        },
-        body: JSON.stringify({ ...formData, GermanRequired: false }) 
-      });
-      
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
-      
-      setMessage({ type: 'success', text: 'Success! Job added.' });
-      setFormData({
-        JobTitle: '', ApplicationURL: '', Company: '', Location: 'Germany',
-        Department: '', ContractType: 'Full-time', ExperienceLevel: '',
-        PostedDate: '', Description: ''
-      });
-    } catch (err) {
-      setMessage({ type: 'error', text: `Error: ${(err as Error).message}` });
-    }
+      const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ...fd, GermanRequired: false }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error);
+      setMsg({ type: 'success', text: 'Job added successfully.' });
+      setFd({ JobTitle: '', ApplicationURL: '', Company: '', Location: 'Germany', Department: '', ContractType: 'Full-time', ExperienceLevel: '', PostedDate: '', Description: '' });
+    } catch (e) { setMsg({ type: 'error', text: `Error: ${(e as Error).message}` }); } finally { setLoading(false); }
   };
 
-  const inputStyle = "mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm";
-  const labelStyle = "block text-sm font-medium text-slate-700 mb-1";
-
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2 border-b border-slate-100 pb-4 mb-2">
-                <h2 className="text-2xl font-bold text-slate-900">Add Manual Job</h2>
-                <p className="text-slate-500 text-sm">Manually insert a job into the English-only feed.</p>
+    <div style={{ background: 'var(--paper)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--surface-solid)', borderBottom: '1.25px solid var(--border)', padding: '32px 0' }}>
+        <Container size="md">
+          <PageHeader label="Admin" title={<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><PlusCircle size={22} color="var(--primary)" />Add Manual Job</span>} subtitle="Manually insert a job into the English-only feed." />
+        </Container>
+      </div>
+      <Container size="md" style={{ padding: '32px 24px' }}>
+        <Card>
+          <form onSubmit={submit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={{ gridColumn: 'span 2' }}><FormField label="Job Title *"><Input name="JobTitle" type="text" required value={fd.JobTitle} onChange={change} placeholder="e.g. Software Engineer" /></FormField></div>
+            <div style={{ gridColumn: 'span 2' }}><FormField label="Application URL *"><Input name="ApplicationURL" type="url" required value={fd.ApplicationURL} onChange={change} placeholder="https://..." /></FormField></div>
+            <FormField label="Company *"><Input name="Company" required value={fd.Company} onChange={change} placeholder="ACME GmbH" /></FormField>
+            <FormField label="Location"><Input name="Location" value={fd.Location} onChange={change} /></FormField>
+            <FormField label="Department"><Input name="Department" value={fd.Department} onChange={change} placeholder="Engineering" /></FormField>
+            <FormField label="Contract Type">
+              <Select name="ContractType" value={fd.ContractType} onChange={change}>
+                {['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'].map(v => <option key={v} value={v}>{v}</option>)}
+              </Select>
+            </FormField>
+            <FormField label="Experience Level"><Input name="ExperienceLevel" value={fd.ExperienceLevel} onChange={change} placeholder="Mid-level" /></FormField>
+            <FormField label="Posted Date"><Input name="PostedDate" type="date" value={fd.PostedDate} onChange={change} /></FormField>
+            <div style={{ gridColumn: 'span 2' }}><FormField label="Description" hint="Brief job description — shown in card preview."><Textarea name="Description" value={fd.Description} onChange={change} rows={4} placeholder="Role overview..." /></FormField></div>
+            <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, paddingTop: 8 }}>
+              {msg && <div style={{ flex: 1 }}><Alert type={msg.type}>{msg.text}</Alert></div>}
+              <Button type="submit" loading={loading}><PlusCircle size={14} />Save Job</Button>
             </div>
-
-            <div className="md:col-span-2">
-                <label htmlFor="JobTitle" className={labelStyle}>Job Title *</label>
-                <input type="text" name="JobTitle" id="JobTitle" value={formData.JobTitle} onChange={handleChange} required className={inputStyle} />
-            </div>
-            
-            <div className="md:col-span-2">
-                <label htmlFor="ApplicationURL" className={labelStyle}>Application URL *</label>
-                <input type="url" name="ApplicationURL" id="ApplicationURL" value={formData.ApplicationURL} onChange={handleChange} required className={inputStyle} />
-            </div>
-
-            <div>
-                <label htmlFor="Company" className={labelStyle}>Company *</label>
-                <input type="text" name="Company" id="Company" value={formData.Company} onChange={handleChange} required className={inputStyle} />
-            </div>
-
-            <div>
-                <label htmlFor="Location" className={labelStyle}>Location</label>
-                <input type="text" name="Location" id="Location" value={formData.Location} onChange={handleChange} className={inputStyle} />
-            </div>
-
-            {/* ... other inputs remain the same ... */}
-
-            <div className="md:col-span-2 flex items-center justify-end pt-4">
-                <button type="submit" className="inline-flex justify-center py-2 px-6 border border-transparent shadow-lg text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-all">
-                Save Job
-                </button>
-            </div>
-
-            <div className="md:col-span-2">
-                {message && (
-                <p className={`mt-4 text-sm font-medium p-3 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {message.text}
-                </p>
-                )}
-            </div>
-        </form>
+          </form>
+        </Card>
+      </Container>
     </div>
   );
 }

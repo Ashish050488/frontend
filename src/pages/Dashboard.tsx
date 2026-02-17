@@ -1,175 +1,75 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Briefcase, Building2, ChevronRight, X } from 'lucide-react';
+import { Briefcase, X, SlidersHorizontal } from 'lucide-react';
 import type { IJob } from '../types';
 import JobCard from '../components/JobCard';
+import { Container, PageHeader, Button, EmptyState } from '../components/ui';
 
-interface CompanyStats {
-  companyName: string;
-  openRoles: number;
-}
-
-const API_URL = `/api/jobs`;
-
+interface CS { companyName: string; openRoles: number; }
 export default function Dashboard() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [sp, setSp] = useSearchParams();
   const [jobs, setJobs] = useState<IJob[]>([]);
-  const [activeCompanies, setActiveCompanies] = useState<CompanyStats[]>([]);
+  const [cos, setCos] = useState<CS[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    document.title = "Browse English-Speaking Jobs in Germany";
-  }, []);
-  // Get currently selected company from URL
-  const selectedCompany = searchParams.get('company') || '';
+  useEffect(() => { document.title = 'Browse English-Speaking Jobs in Germany'; }, []);
+  const sel = sp.get('company') || '';
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // 1. Fetch Companies (For Sidebar)
-        // We fetch the directory but filter client-side for companies with jobs
-        const dirRes = await fetch('/api/jobs/directory');
-        const dirData = await dirRes.json();
-        
-        // Filter: Only show companies that actually have open roles (Scraped ones)
-        const hiringCompanies = Array.isArray(dirData) 
-            ? dirData.filter((c: any) => c.openRoles > 0) 
-            : [];
-        
-        setActiveCompanies(hiringCompanies);
+    (async () => {
+      setLoading(true); try {
+        const dr = await fetch('/api/jobs/directory'); const dd = await dr.json();
+        setCos(Array.isArray(dd) ? dd.filter((c: any) => c.openRoles > 0) : []);
+        const url = `/api/jobs?limit=100${sel ? `&company=${encodeURIComponent(sel)}` : ''}`;
+        const jr = await fetch(url); const jd = await jr.json(); setJobs(jd.jobs || []);
+      } catch (e) { console.error(e); } finally { setLoading(false); }
+    })();
+  }, [sel]);
 
-        // 2. Fetch Jobs
-        let url = `${API_URL}?limit=100`;
-        if (selectedCompany) {
-          url += `&company=${encodeURIComponent(selectedCompany)}`;
-        }
-        const jobRes = await fetch(url);
-        const jobData = await jobRes.json();
-        setJobs(jobData.jobs || []);
-        
-      } catch (err) {
-        console.error("Fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [selectedCompany]);
-
-  const handleFeedback = async (id: string, status: 'up' | 'down') => {
-      if (status === 'down') setJobs(prev => prev.filter(j => j._id !== id));
-      else setJobs(prev => prev.map(j => j._id === id ? { ...j, thumbStatus: status } : j));
-      
-      await fetch(`${API_URL}/${id}/feedback`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
-      });
+  const feedback = async (id: string, status: 'up' | 'down') => {
+    if (status === 'down') setJobs(p => p.filter(j => j._id !== id));
+    else setJobs(p => p.map(j => j._id === id ? { ...j, thumbStatus: status } : j));
+    await fetch(`/api/jobs/${id}/feedback`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
   };
 
+  const SideBtn = ({ label, count, active, onClick }: { label: string; count?: number; active: boolean; onClick: () => void }) => (
+    <button onClick={onClick} style={{ width: '100%', textAlign: 'left', padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: '0.875rem', background: active ? 'var(--primary-soft)' : 'transparent', color: active ? 'var(--primary)' : 'var(--muted-ink)', fontWeight: active ? 700 : 400, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.22s', fontFamily: 'inherit' }}
+      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--paper2)' }}
+      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{label}</span>
+      {count !== undefined && <span style={{ fontSize: '0.75rem', background: 'var(--paper2)', color: 'var(--subtle-ink)', padding: '1px 6px', borderRadius: 4, flexShrink: 0 }}>{count}</span>}
+    </button>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col md:flex-row gap-8">
-        
-        {/* --- LEFT SIDEBAR (Company List) --- */}
-        <div className="w-full md:w-64 shrink-0">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden sticky top-24">
-                <div className="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-blue-600" /> Hiring Partners
-                    </h3>
-                </div>
-                
-                <div className="max-h-[70vh] overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                    {/* "All Jobs" Option */}
-                    <button
-                        onClick={() => setSearchParams({})}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${
-                            selectedCompany === '' 
-                            ? 'bg-blue-50 text-blue-700' 
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                    >
-                        All Jobs
-                        {selectedCompany === '' && <ChevronRight className="w-3.5 h-3.5" />}
-                    </button>
-
-                    {/* Company List */}
-                    {activeCompanies.map(c => (
-                        <button
-                            key={c.companyName}
-                            onClick={() => setSearchParams({ company: c.companyName })}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${
-                                selectedCompany === c.companyName 
-                                ? 'bg-blue-50 text-blue-700' 
-                                : 'text-slate-600 hover:bg-slate-50'
-                            }`}
-                        >
-                            <span className="truncate">{c.companyName}</span>
-                            <span className="bg-slate-100 text-slate-500 text-xs py-0.5 px-1.5 rounded-full">
-                                {c.openRoles}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-
-        {/* --- MAIN FEED --- */}
-        <div className="flex-1">
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-slate-900">
-                    {selectedCompany ? `${selectedCompany} Roles` : 'Latest Active Jobs'}
-                </h1>
-                <p className="text-slate-500 mt-1">
-                    {jobs.length} verified English-speaking opportunities available.
-                </p>
-                
-                {/* Clear Filter Badge */}
-                {selectedCompany && (
-                    <button 
-                        onClick={() => setSearchParams({})}
-                        className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-full transition-colors"
-                    >
-                        Filter: {selectedCompany} <X className="w-3 h-3" />
-                    </button>
-                )}
-            </div>
-
-            {loading ? (
-                <div className="space-y-4">
-                    {[1,2,3].map(i => (
-                        <div key={i} className="h-40 bg-slate-100 rounded-xl animate-pulse"></div>
-                    ))}
-                </div>
-            ) : jobs.length === 0 ? (
-                <div className="bg-white border border-slate-200 border-dashed rounded-xl p-12 text-center">
-                    <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-900">No jobs found</h3>
-                    <p className="text-slate-500">Try selecting a different company or viewing all jobs.</p>
-                    <button 
-                        onClick={() => setSearchParams({})}
-                        className="mt-4 text-blue-600 font-bold hover:underline"
-                    >
-                        Clear Filters
-                    </button>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {jobs.map(job => (
-                        <JobCard 
-                            key={job._id} 
-                            job={job} 
-                            onFeedback={handleFeedback} 
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-
+    <div style={{ background: 'var(--paper)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--surface-solid)', borderBottom: '1.25px solid var(--border)', padding: '32px 0' }}>
+        <Container>
+          <PageHeader label="Opportunities" title={sel || 'All English Jobs'}
+            subtitle={`${jobs.length} verified English-speaking roles`}
+            actions={sel ? <button onClick={() => setSp({})} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 6, border: '1.25px solid var(--border)', background: 'var(--paper2)', color: 'var(--muted-ink)', cursor: 'pointer', fontSize: '0.8rem', fontFamily: 'inherit' }}>{sel}<X size={11} /></button> : undefined} />
+        </Container>
       </div>
+      <Container style={{ padding: '28px 24px' }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+          <aside style={{ width: 210, flexShrink: 0, position: 'sticky', top: 76 }} className="hidden md:block">
+            <div style={{ background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 14px', borderBottom: '1.25px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <SlidersHorizontal size={12} color="var(--primary)" />
+                <span className="font-sketch" style={{ fontSize: '0.95rem', color: 'var(--primary)' }}>Companies</span>
+              </div>
+              <div className="thin-scroll" style={{ maxHeight: '72vh', overflowY: 'auto', padding: 8 }}>
+                <SideBtn label="All Jobs" active={!sel} onClick={() => setSp({})} />
+                {cos.map(c => <SideBtn key={c.companyName} label={c.companyName} count={c.openRoles} active={sel === c.companyName} onClick={() => setSp({ company: c.companyName })} />)}
+              </div>
+            </div>
+          </aside>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {loading ? <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{[1, 2, 3, 4].map(i => <div key={i} className="skeleton" style={{ height: 148 }} />)}</div>
+              : jobs.length === 0 ? <EmptyState icon={<Briefcase size={36} />} title="No jobs found" body="Try a different company or view all roles." action={<Button variant="ghost" onClick={() => setSp({})}>Clear filter</Button>} />
+                : <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{jobs.map(j => <JobCard key={j._id} job={j} onFeedback={feedback} />)}</div>}
+          </div>
+        </div>
+      </Container>
     </div>
   );
 }

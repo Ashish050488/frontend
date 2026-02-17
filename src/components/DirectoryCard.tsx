@@ -1,73 +1,91 @@
-import { useState } from 'react';
-import { MapPin, ExternalLink } from 'lucide-react';
-
-interface CompanyStats {
-  companyName: string;
-  domain: string;
-  cities: string[];
-  source: 'scraped' | 'manual';
-}
+import { useState, type ReactNode } from 'react';
+import { MapPin, ArrowUpRight } from 'lucide-react';
+import { Badge } from './ui';
+import type { ICompany } from '../types';
 
 interface Props {
-  company: CompanyStats;
+  company: ICompany;
+  /** If true, show admin overlay actions */
+  adminActions?: ReactNode;
 }
 
-export default function DirectoryCard({ company }: Props) {
-  const [imageError, setImageError] = useState(false);
+export default function CompanyCard({ company, adminActions }: Props) {
+  const [imgErr, setImgErr] = useState(false);
+  const [hov, setHov] = useState(false);
 
-  // Logo URL
-  const logoUrl = `https://logo.clearbit.com/${company.domain}?size=128`;
-
-  // External Link Logic
-  const handleVisit = () => {
-  let url = (company.domain || '').trim();
-
-  // If it's missing http/https, add https://
-  if (!/^https?:\/\//i.test(url)) {
-    url = `https://${url}`;
-  }
-
-  window.open(url, '_blank');
-};
+  const host = (d: string) => { const s = (d || '').trim(); try { return new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`).hostname; } catch { return s.replace(/^https?:\/\//i, '').split('/')[0]; } };
+  const visit = () => {
+    if (adminActions) return; // Don't open link in admin mode
+    let u = (company.domain || '').trim(); if (!/^https?:\/\//i.test(u)) u = `https://${u}`; window.open(u, '_blank');
+  };
 
   return (
-    <div 
-      onClick={handleVisit}
-      className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col items-center text-center hover:shadow-lg hover:border-blue-200 transition-all duration-300 cursor-pointer group h-full"
+    <div
+      className="sketch-card"
+      onClick={visit}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      role={adminActions ? undefined : 'link'}
+      tabIndex={0}
+      onKeyDown={e => { if (!adminActions && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); visit(); } }}
+      style={{
+        background: hov ? 'var(--paper2)' : 'var(--surface-solid)',
+        borderColor: hov ? 'var(--border-strong)' : undefined,
+        padding: '22px 20px',
+        cursor: adminActions ? 'default' : 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        transition: 'all 0.22s cubic-bezier(0.2,0.8,0.2,1)',
+        transform: hov && !adminActions ? 'translateY(-3px)' : 'none',
+        boxShadow: hov ? 'var(--shadow-md)' : 'none',
+        minHeight: 140,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
     >
-      {/* Logo Container */}
-      <div className="h-16 w-full flex items-center justify-center mb-4">
-        {!imageError ? (
-          <img 
-            src={logoUrl} 
-            alt={company.companyName}
-            className="max-h-12 max-w-[140px] object-contain grayscale group-hover:grayscale-0 opacity-70 group-hover:opacity-100 transition-all duration-500"
-            onError={() => setImageError(true)} 
-          />
-        ) : (
-          <div className="h-12 w-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg font-bold border border-slate-200">
-            {company.companyName.charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
+      {/* Primary corner glow on hover */}
+      {hov && !adminActions && <div style={{ position: 'absolute', top: -30, right: -30, width: 70, height: 70, background: 'var(--primary-soft)', borderRadius: '50%', filter: 'blur(18px)', pointerEvents: 'none' }} />}
 
-      {/* Company Name */}
-      <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
-        {company.companyName}
-      </h3>
+      {/* External link icon */}
+      {!adminActions && <div style={{ position: 'absolute', top: 12, right: 12, opacity: hov ? 1 : 0, transition: 'opacity 0.2s', color: 'var(--primary)' }}><ArrowUpRight size={14} /></div>}
+
+      {/* Admin actions (e.g. delete button) */}
+      {adminActions && <div style={{ position: 'absolute', top: 12, right: 12 }}>{adminActions}</div>}
+
+      {/* Logo + Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 44, height: 44, background: 'var(--paper2)', border: '1.25px solid var(--border)',
+          borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden', padding: 6, flexShrink: 0,
+        }}>
+          {!imgErr
+            ? <img src={`https://logo.clearbit.com/${host(company.domain)}?size=128`} alt={company.companyName}
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: hov ? 'none' : 'grayscale(40%) brightness(0.9)', opacity: hov ? 1 : 0.75, transition: 'all 0.3s' }}
+              onError={() => setImgErr(true)} />
+            : <span className="font-sketch" style={{ fontSize: '1.3rem', color: 'var(--primary)', fontWeight: 700 }}>{company.companyName.charAt(0)}</span>}
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h3 style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '1rem', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {company.companyName}
+          </h3>
+          {company.openRoles > 0 && <Badge variant="primary">{company.openRoles} open role{company.openRoles > 1 ? 's' : ''}</Badge>}
+        </div>
+      </div>
 
       {/* Location */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
-        <MapPin className="w-3 h-3 text-slate-400" />
-        <span className="truncate max-w-[150px]">
-            {company.cities.length > 0 ? company.cities.slice(0, 2).join(", ") : "Germany"}
-        </span>
-      </div>
+      <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', color: 'var(--subtle-ink)', lineHeight: 1.5, marginTop: 'auto' }}>
+        <MapPin size={12} style={{ flexShrink: 0 }} />
+        {company.cities.length > 0 ? company.cities.slice(0, 3).join(', ') : 'Germany (Various)'}
+      </p>
 
-      {/* Subtle "External" Hint (Only visible on hover) */}
-      <div className="mt-auto opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-blue-600 flex items-center gap-1">
-        Visit Career Page <ExternalLink className="w-3 h-3" />
-      </div>
+      {/* Source badge for admin */}
+      {adminActions && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <Badge variant={company.source === 'scraped' ? 'primary' : 'neutral'}>{company.source}</Badge>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,245 +1,102 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, CheckCircle, Briefcase, Globe } from 'lucide-react';
+import { Sparkles, CheckCircle, Briefcase, Globe, ArrowRight, Shield, Mail } from 'lucide-react';
+import { Button, FormField, Input, Select, Alert } from '../components/ui';
+
+const COUNTRIES = ["Germany", "India", "United Kingdom", "United States", "Canada", "Australia", "--------------------------------", "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Austria", "Azerbaijan", "Bahrain", "Bangladesh", "Belarus", "Belgium", "Bolivia", "Brazil", "Bulgaria", "Cambodia", "Chile", "China", "Colombia", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Ecuador", "Egypt", "Estonia", "Ethiopia", "Finland", "France", "Ghana", "Greece", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Latvia", "Lebanon", "Lithuania", "Luxembourg", "Malaysia", "Malta", "Mexico", "Moldova", "Montenegro", "Morocco", "Nepal", "Netherlands", "New Zealand", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Panama", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saudi Arabia", "Serbia", "Singapore", "Slovakia", "Slovenia", "South Africa", "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand", "Tunisia", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Venezuela", "Vietnam", "Zambia", "Zimbabwe"];
+
+const TRUST = [
+  { icon: <Mail size={14} />, text: 'Weekly curated job digest to your inbox' },
+  { icon: <Shield size={14} />, text: 'No spam — we respect your privacy' },
+  { icon: <Globe size={14} />, text: 'English-only roles verified by AI + humans' },
+];
 
 export default function Signup() {
-  const [formData, setFormData] = useState({ name: '', email: '', domain: 'Tech', location: '' });
+  const [fd, setFd] = useState({ name: '', email: '', domain: 'Tech', location: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [err, setErr] = useState('');
 
-  // ✅ COMPLETE LIST OF COUNTRIES
-  // Priority at top, then alphabetical
-  const countries = [
-    // --- Priority Markets ---
-    "Germany", "India", "United Kingdom", "United States", "Canada", "Australia",
-    // --- Divider ---
-    "--------------------------------",
-    // --- All Countries A-Z ---
-    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
-    "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
-    "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (DRC)", "Congo (Republic)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
-    "Denmark", "Djibouti", "Dominica", "Dominican Republic",
-    "East Timor", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
-    "Fiji", "Finland", "France",
-    "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
-    "Haiti", "Honduras", "Hungary",
-    "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast",
-    "Jamaica", "Japan", "Jordan",
-    "Kazakhstan", "Kenya", "Kiribati", "Korea, North", "Korea, South", "Kosovo", "Kuwait", "Kyrgyzstan",
-    "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
-    "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway",
-    "Oman",
-    "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
-    "Qatar",
-    "Romania", "Russia", "Rwanda",
-    "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
-    "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
-    "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
-    "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
-    "Yemen",
-    "Zambia", "Zimbabwe"
-  ];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Prevent selecting the separator
-    if (formData.location.startsWith("---")) return;
-
-    setStatus('loading');
-    setErrorMessage('');
-
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); if (fd.location.startsWith('---')) return;
+    setStatus('loading'); setErr('');
     try {
-      const res = await fetch('/api/auth/talent-pool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
-
+      const r = await fetch('/api/auth/talent-pool', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fd) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Something went wrong.');
       setStatus('success');
-      
-    } catch (err: any) {
-      setStatus('error');
-      setErrorMessage(err.message || 'Failed to join. Please try again.');
-    }
+    } catch (e: any) { setStatus('error'); setErr(e.message); }
   };
 
-  if (status === 'success') {
-    return (
-      <div className="flex justify-center items-center min-h-[80vh] bg-slate-50 px-4">
-        <div className="bg-white p-10 rounded-2xl shadow-xl border border-blue-100 w-full max-w-lg text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
-            
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-4">You’re on the list 🎉</h2>
-            <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                We’ll notify you when new English-speaking jobs in Germany are added.
-            </p>
-
-            {/* What to expect box */}
-            <div className="bg-slate-50 rounded-xl p-5 mb-8 text-left border border-slate-100">
-                <p className="font-bold text-slate-900 mb-3 text-sm uppercase tracking-wide">What to expect:</p>
-                <ul className="space-y-3 text-slate-700">
-                    <li className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <span>Curated & reviewed roles</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <span>No spam — unsubscribe anytime</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <span>First emails launching soon</span>
-                    </li>
-                </ul>
-            </div>
-
-            <p className="text-sm text-slate-400 italic mb-8">
-                Thanks for supporting an early-stage project 💛
-            </p>
-
-            <Link to="/" className="inline-block bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg w-full sm:w-auto">
-                Back to Jobs
-            </Link>
-        </div>
+  if (status === 'success') return (
+    <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', padding: 24, position: 'relative', overflow: 'hidden' }}>
+      <div className="orb" style={{ width: 400, height: 400, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--primary-soft)' }} />
+      <div className="anim-scale" style={{ textAlign: 'center', padding: 56, maxWidth: 400, position: 'relative', zIndex: 1, background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow-lg)' }}>
+        <div style={{ width: 58, height: 58, background: 'var(--success-soft)', border: '1.25px solid var(--success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)', margin: '0 auto 22px' }}><CheckCircle size={26} /></div>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 12 }}>You're in.</h2>
+        <p style={{ color: 'var(--muted-ink)', lineHeight: 1.75, marginBottom: 30, fontSize: '0.92rem' }}>Expect curated English-speaking job alerts in Germany in your inbox every week.</p>
+        <Link to="/jobs"><Button>Browse Jobs Now <ArrowRight size={14} /></Button></Link>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="flex justify-center items-center min-h-[80vh] bg-slate-50 px-4">
-      <div className="bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-slate-200 w-full max-w-md relative overflow-hidden">
-        
-        {/* Header */}
-        <div className="text-center mb-8 relative z-10">
-          <div className="inline-flex p-3 bg-blue-50 rounded-xl mb-4">
-            <Sparkles className="w-6 h-6 text-blue-600" />
+    <div style={{ minHeight: '90vh', display: 'flex', background: 'var(--paper)' }}>
+      {/* Brand panel (desktop only) */}
+      <div className="hidden md:flex" style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '48px', background: 'var(--paper2)', borderRight: '1.25px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
+        <div className="grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 360, textAlign: 'center' }}>
+          <div style={{ width: 56, height: 56, background: 'var(--primary-soft)', border: '1.25px solid var(--primary)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 24px' }}>
+            <Sparkles size={24} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Join the Talent Pool</h2>
-          <p className="text-slate-500 mt-2 text-sm">
-            Get notified about "No German Required" jobs that match your profile.
-          </p>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: 12 }}>Get job alerts</h2>
+          <p style={{ color: 'var(--muted-ink)', marginBottom: 36, lineHeight: 1.65, fontSize: '0.95rem' }}>Join 2,000+ professionals receiving weekly curated English-only job listings in Germany.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
+            {TRUST.map((t, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted-ink)', fontSize: '0.875rem' }}>
+                <span style={{ color: 'var(--primary)', flexShrink: 0 }}>{t.icon}</span>{t.text}
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
-        {status === 'error' && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 text-center font-medium">
-            {errorMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
-          
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Full Name</label>
-            <input
-              type="text"
-              required
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              placeholder="e.g. Alex Smith"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-            />
+      {/* Form panel */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div className="anim-up" style={{ width: '100%', maxWidth: 440 }}>
+          {/* Mobile brand header */}
+          <div className="md:hidden" style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ width: 46, height: 46, background: 'var(--primary-soft)', border: '1.25px solid var(--primary)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 14px' }}><Sparkles size={20} /></div>
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Email Address</label>
-            <input
-              type="email"
-              required
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              placeholder="alex@example.com"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-            />
-          </div>
-
-          {/* Domain Selection */}
-          <div>
-            <label className=" text-sm font-bold text-slate-700 mb-1.5 flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-slate-400" /> Job Interest
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-                <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, domain: 'Tech'})}
-                    className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${
-                        formData.domain === 'Tech' 
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                        : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400'
-                    }`}
-                >
-                    Tech / IT
-                </button>
-                <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, domain: 'Non-Tech'})}
-                    className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${
-                        formData.domain === 'Non-Tech' 
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                        : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400'
-                    }`}
-                >
-                    Business / Other
-                </button>
+          <div style={{ background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 18, padding: '36px 32px', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ marginBottom: 28 }}>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: 6 }}>Get job alerts</h2>
+              <p style={{ color: 'var(--subtle-ink)', fontSize: '0.9rem' }}>Weekly digest of verified English-only roles in Germany</p>
             </div>
-          </div>
-
-          {/* Location Dropdown (Full World List) */}
-          <div>
-            <label className=" text-sm font-bold text-slate-700 mb-1.5 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-400" /> Current Location
-            </label>
-            <div className="relative">
-                <select
-                    required
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none bg-white text-slate-700"
-                    value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
-                >
-                    <option value="" disabled>Select your country</option>
-                    {countries.map(country => (
-                        <option 
-                            key={country} 
-                            value={country} 
-                            disabled={country.startsWith("---")} 
-                            className={country.startsWith("---") ? "text-slate-400 font-bold bg-slate-50" : ""}
-                        >
-                            {country}
-                        </option>
-                    ))}
-                </select>
-                {/* Custom dropdown arrow */}
-                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+            {status === 'error' && <div style={{ marginBottom: 18 }}><Alert type="error">{err}</Alert></div>}
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <FormField label="Full Name"><Input type="text" required placeholder="Alex Smith" value={fd.name} onChange={e => setFd({ ...fd, name: e.target.value })} /></FormField>
+              <FormField label="Email Address"><Input type="email" required placeholder="alex@example.com" value={fd.email} onChange={e => setFd({ ...fd, email: e.target.value })} /></FormField>
+              <div>
+                <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted-ink)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={11} />Job Interest</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {[['Tech', 'Tech / IT'], ['Non-Tech', 'Business / Other']].map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => setFd({ ...fd, domain: v })} style={{ padding: '11px', fontFamily: 'inherit', fontSize: '0.875rem', fontWeight: 600, background: fd.domain === v ? 'var(--primary-soft)' : 'var(--paper2)', color: fd.domain === v ? 'var(--primary)' : 'var(--muted-ink)', border: `1.25px solid ${fd.domain === v ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.22s' }}>{l}</button>
+                  ))}
                 </div>
-            </div>
+              </div>
+              <FormField label="Current Country">
+                <Select required value={fd.location} onChange={e => setFd({ ...fd, location: e.target.value })}>
+                  <option value="" disabled>Select your country</option>
+                  {COUNTRIES.map((c, i) => <option key={i} value={c} disabled={c.startsWith('---')}>{c}</option>)}
+                </Select>
+              </FormField>
+              <Button loading={status === 'loading'} style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: 4 }}>
+                <Sparkles size={14} />Join the list
+              </Button>
+            </form>
+            <p style={{ textAlign: 'center', marginTop: 18, fontSize: '0.875rem', color: 'var(--subtle-ink)' }}>Admin? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Login here</Link></p>
           </div>
-
-          <button 
-            type="submit" 
-            disabled={status === 'loading'}
-            className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg disabled:opacity-70 mt-2"
-          >
-            {status === 'loading' ? 'Joining...' : 'Join Early Access List'}
-          </button>
-        </form>
-
-        <p className="text-center mt-6 text-xs text-slate-500">
-           Admin user?{' '}
-          <Link to="/login" className="text-blue-600 font-bold hover:underline">
-            Login here
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );

@@ -1,101 +1,77 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn } from 'lucide-react';
+import { Briefcase, ArrowRight, Lock, CheckCircle } from 'lucide-react';
+import { Button, Input, FormField, Alert } from '../components/ui';
+import { BRAND } from '../theme/brand';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth(); const nav = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-
-      // 1. Save Token
-      login(data.token, data.user);
-      
-      // 2. Smart Redirect based on Role
-      if (data.user.role === 'admin') {
-        navigate('/review'); // Admins go straight to work
-      } else {
-        navigate('/'); // Users go to home
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+      const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Login failed');
+      login(d.token, d.user); nav(d.user.role === 'admin' ? '/review' : '/');
+    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
   };
 
+  const TRUST = [
+    { icon: <CheckCircle size={14} />, text: 'No German required — verified listings' },
+    { icon: <Lock size={14} />, text: 'Secure login with encrypted credentials' },
+    { icon: <Briefcase size={14} />, text: 'Admin access to manage the job board' },
+  ];
+
   return (
-    <div className="flex justify-center items-center min-h-[80vh] bg-slate-50">
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogIn className="w-6 h-6 text-blue-600" />
+    <div style={{ minHeight: '90vh', display: 'flex', background: 'var(--paper)' }}>
+      {/* Brand panel (desktop only) */}
+      <div className="hidden md:flex" style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '48px', background: 'var(--paper2)', borderRight: '1.25px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
+        <div className="grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 360, textAlign: 'center' }}>
+          <div style={{ width: 56, height: 56, background: 'var(--primary-soft)', border: '1.25px solid var(--primary)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 24px' }}>
+            <Briefcase size={24} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Welcome Back</h2>
-          <p className="text-slate-500 mt-2">Sign in to access your account</p>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: 12 }}>Welcome back</h2>
+          <p style={{ color: 'var(--muted-ink)', marginBottom: 36, lineHeight: 1.65, fontSize: '0.95rem' }}>{BRAND.description}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
+            {TRUST.map((t, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted-ink)', fontSize: '0.875rem' }}>
+                <span style={{ color: 'var(--primary)', flexShrink: 0 }}>{t.icon}</span>{t.text}
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+      {/* Form panel */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div className="anim-scale" style={{ width: '100%', maxWidth: 400 }}>
+          {/* Mobile brand header */}
+          <div className="md:hidden" style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ width: 46, height: 46, background: 'var(--primary-soft)', border: '1.25px solid var(--primary)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 14px' }}><Briefcase size={20} /></div>
           </div>
 
-          <button 
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:opacity-70"
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p className="text-center mt-6 text-sm text-slate-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-600 font-bold hover:underline">
-            Sign up
-          </Link>
-        </p>
+          <div style={{ background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 18, padding: '36px 32px', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ marginBottom: 28 }}>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: 6 }}>Sign in</h2>
+              <p style={{ color: 'var(--subtle-ink)', fontSize: '0.9rem' }}>Access your {BRAND.appName} account</p>
+            </div>
+            {error && <div style={{ marginBottom: 18 }}><Alert type="error">{error}</Alert></div>}
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <FormField label="Email"><Input type="email" required placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} /></FormField>
+              <FormField label="Password"><Input type="password" required placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} /></FormField>
+              <Button loading={loading} style={{ width: '100%', justifyContent: 'center', marginTop: 4, padding: '13px' }}>Sign In <ArrowRight size={14} /></Button>
+            </form>
+            <p style={{ textAlign: 'center', marginTop: 22, fontSize: '0.875rem', color: 'var(--subtle-ink)' }}>
+              No account? <Link to="/signup" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Sign up free</Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

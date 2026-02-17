@@ -1,195 +1,180 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Mail, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, Mail, Briefcase, Shield, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import JobCard from '../components/JobCard';
-import DirectoryCard from '../components/DirectoryCard';
+import CompanyCard from '../components/DirectoryCard';
 import type { IJob, ICompany } from '../types';
+import { Button, Badge, Container, Alert } from '../components/ui';
+import { BRAND } from '../theme/brand';
+
+const TICKER = ['Software Engineer', 'Product Manager', 'Data Scientist', 'UX Designer', 'DevOps Engineer', 'Marketing Manager', 'Finance Analyst', 'Team Lead', 'Backend Developer', 'Cloud Architect', 'Scrum Master', 'Machine Learning Engineer', 'Frontend Developer', 'Operations Manager', 'Business Analyst', 'Head of Growth'];
+const WHY = [
+  { icon: <Briefcase size={18} />, title: 'AI-Filtered', body: 'Every listing is scanned to confirm German is not required — not guessed, confirmed.' },
+  { icon: <Search size={18} />, title: 'Daily Scrapes', body: 'We scrape 20+ top German employers daily so you always see fresh roles first.' },
+  { icon: <Shield size={18} />, title: 'Human Reviewed', body: 'A review layer catches AI mistakes. Only quality, relevant roles reach you.' },
+];
 
 export default function Home() {
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [companies, setCompanies] = useState<ICompany[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Newsletter State
   const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [subMessage, setSubMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [sub, setSub] = useState<'idle' | 'busy' | 'ok' | 'err'>('idle');
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // ✅ Update Page Title
-    document.title = "English-Speaking Jobs in Germany | No German Required";
-
-    const fetchData = async () => {
+    document.title = `${BRAND.fullName} | ${BRAND.tagline}`;
+    (async () => {
       try {
-        const jobRes = await fetch('/api/jobs?limit=9');
-        const jobData = await jobRes.json();
-        setJobs(jobData.jobs || []);
-
-        const dirRes = await fetch('/api/jobs/directory');
-        const dirData = await dirRes.json();
-        if (Array.isArray(dirData)) {
-            setCompanies(dirData.slice(0, 8)); 
-        }
-      } catch (e) { console.error(e); } 
-      finally { setLoading(false); }
-    };
-    fetchData();
+        const [jr, dr] = await Promise.all([fetch('/api/jobs?limit=9'), fetch('/api/jobs/directory')]);
+        const jd = await jr.json(); setJobs(jd.jobs || []);
+        const dd = await dr.json(); if (Array.isArray(dd)) setCompanies(dd.slice(0, 8));
+      } catch (e) { console.error(e); } finally { setLoading(false); }
+    })();
   }, []);
 
-  const handleSubscribe = async (e: FormEvent) => {
-      e.preventDefault();
-      if(!email) return;
-      setSubmitting(true);
-      setSubMessage(null);
+  const subscribe = async (e: FormEvent) => {
+    e.preventDefault(); if (!email) return; setSub('busy');
+    try {
+      const r = await fetch('/api/auth/talent-pool', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, name: email.split('@')[0], domain: 'General', location: 'Unknown' }) });
+      setSub(r.ok ? 'ok' : 'err'); if (r.ok) setEmail('');
+    } catch { setSub('err'); }
+  };
 
-      try {
-          const res = await fetch('/api/auth/talent-pool', { // Using Talent Pool endpoint
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, name: email.split('@')[0], domain: 'General', location: 'Unknown' }) 
-          });
-          
-          if(res.ok) {
-              setSubMessage({ type: 'success', text: "Success! You're on the list." });
-              setEmail('');
-          } else {
-               setSubMessage({ type: 'error', text: "Something went wrong. Please try again." });
-          }
-      } catch (err) {
-           setSubMessage({ type: 'error', text: "Network error. Please try again later." });
-      } finally {
-          setSubmitting(false);
-      }
+  const scrollCarousel = (dir: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    const scrollAmount = 300;
+    carouselRef.current.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      
-      {/* 1. ✅ UPDATED HERO SECTION */}
-      <div className="bg-[#0f172a] text-white py-24 px-6 text-center border-b border-slate-800">
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
-             English-Speaking Jobs in Germany <br />
-             <span className="text-[#3b82f6]">No German Required</span>
-        </h1>
-        <p className="text-lg text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Germany has thousands of English-speaking roles — but they’re hard to find. We curate and review jobs where German is not mandatory, so you don’t waste time.
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-            {/* Primary CTA */}
-            <Link to="/signup" className="bg-[#1c54b2] hover:bg-blue-700 text-white px-8 py-3.5 rounded-lg font-bold transition-all shadow-lg shadow-blue-900/20">
-                Get Job Alerts (Free)
-            </Link>
-            {/* Secondary CTA */}
-            <Link to="/jobs" className="bg-white text-slate-900 hover:bg-slate-50 px-8 py-3.5 rounded-lg font-bold transition-all border border-transparent hover:border-slate-300">
-                Browse Jobs →
-            </Link>
+    <div>
+      {/* ── HERO ─────────────────────────────────────── */}
+      <section style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className="grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
+        <div className="orb" style={{ width: 500, height: 500, top: -200, left: '50%', transform: 'translateX(-50%)', background: 'var(--primary-soft)' }} />
+        <Container style={{ position: 'relative', zIndex: 1, paddingTop: 96, paddingBottom: 80, textAlign: 'center' }}>
+          <div className="anim-up" style={{ marginBottom: 20 }}><Badge variant="primary"><Briefcase size={10} />{BRAND.tagline}</Badge></div>
+          <h1 className="anim-up" style={{ animationDelay: '0.07s', fontSize: 'clamp(2.4rem,6.5vw,4.5rem)', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
+            English-Speaking<br /><span className="font-sketch" style={{ color: 'var(--primary)', fontSize: '1.1em' }}>Jobs in Germany</span>
+          </h1>
+          <p className="anim-up" style={{ animationDelay: '0.14s', fontSize: '1.05rem', color: 'var(--muted-ink)', lineHeight: 1.75, maxWidth: 500, margin: '0 auto 36px' }}>
+            We scrape, filter, and review roles from 20+ major German companies — surfacing only the ones where German is genuinely not required.
+          </p>
+          <div className="anim-up" style={{ animationDelay: '0.2s', display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <Link to="/signup"><Button size="lg">Get Weekly Alerts <ArrowRight size={15} /></Button></Link>
+            <Link to="/jobs"><Button variant="ghost" size="lg">Browse Jobs</Button></Link>
+          </div>
+          <div className="anim-up" style={{ animationDelay: '0.28s', display: 'flex', justifyContent: 'center', gap: 48, marginTop: 60, flexWrap: 'wrap', paddingTop: 40, borderTop: '1.25px solid var(--border)' }}>
+            {[['20+', 'Companies'], ['Daily', 'Fresh scrapes'], ['Free', 'Forever']].map(([v, l]) => (
+              <div key={l} style={{ textAlign: 'center' }}>
+                <div className="font-sketch" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>{v}</div>
+                <div style={{ fontSize: '0.78rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--subtle-ink)', marginTop: 4 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </Container>
+        <div className="ticker-wrap" style={{ position: 'relative', overflow: 'hidden', borderTop: '1.25px solid var(--border)', borderBottom: '1.25px solid var(--border)', padding: '13px 0', background: 'var(--surface-solid)', zIndex: 1 }}>
+          <div className="ticker-track" style={{ display: 'inline-flex', whiteSpace: 'nowrap' }}>
+            {[...TICKER, ...TICKER].map((t, i) => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 28, paddingRight: 40 }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--subtle-ink)', letterSpacing: '0.02em' }}>{t}</span>
+                <span style={{ color: 'var(--primary)', fontSize: '0.55rem' }}>✦</span>
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* 2. COMPANY SHOWCASE */}
-      <div className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-12">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                    Trusted companies hiring English-speaking roles
-                </p>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-                {companies.map(c => (
-                    <DirectoryCard key={c.companyName} company={c} />
-                ))}
-            </div>
+      {/* ── WHY SECTION ──────────────────────────────── */}
+      <section style={{ padding: '80px 0', background: 'var(--paper)' }}>
+        <Container>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', border: '1.25px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+            {WHY.map((w, i) => (
+              <div key={i} style={{ padding: '36px 30px', background: 'var(--surface-solid)', borderRight: i < WHY.length - 1 ? '1.25px solid var(--border)' : 'none', transition: 'background 0.22s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--paper2)'}
+                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-solid)'}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-soft)', border: '1.25px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', marginBottom: 18 }}>{w.icon}</div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{w.title}</h3>
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted-ink)', lineHeight: 1.7 }}>{w.body}</p>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
 
-            <div className="text-center">
-                <Link to="/directory" className="inline-flex items-center text-[#1c54b2] font-bold hover:underline transition-colors text-sm">
-                    See full directory <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-            </div>
-        </div>
-      </div>
-
-      {/* 3. NEWSLETTER SECTION */}
-      <div className="bg-[#1c54b2] text-white py-20 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-            <div className="absolute -top-24 -left-24 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
-            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl"></div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-            <div className="inline-flex p-4 bg-white/10 rounded-full mb-6 ring-1 ring-white/20 backdrop-blur-sm">
-                <Mail className="w-8 h-8 text-white" />
-            </div>
-            
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">
-                Never miss an English job drop.
-            </h2>
-            <p className="text-blue-100 mb-10 max-w-xl mx-auto text-lg leading-relaxed">
-                Join 2,000+ professionals. We send a curated list of new "No German Required" jobs to your inbox every week. Zero spam.
-            </p>
-
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row justify-center items-center gap-3 max-w-lg mx-auto">
-                <input 
-                    type="email" 
-                    placeholder="Enter your email address" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={submitting}
-                    className="w-full px-6 py-4 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-white/30 font-medium shadow-xl border-0"
-                />
-                <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="w-full sm:w-auto px-8 py-4 bg-[#0f172a] hover:bg-slate-900 text-white rounded-xl font-bold transition-all shadow-xl whitespace-nowrap disabled:opacity-70 shrink-0"
-                >
-                    {submitting ? 'Joining...' : 'Subscribe'}
-                </button>
-            </form>
-
-            {subMessage && (
-                <div className={`mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold shadow-sm animate-fade-in-up ${
-                    subMessage.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
-                    {subMessage.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-                    {subMessage.text}
-                </div>
-            )}
-        </div>
-      </div>
-
-      {/* 4. LATEST JOBS FEED */}
-      <div className="max-w-5xl mx-auto px-6 py-24 bg-slate-50">
-        <div className="flex justify-between items-end mb-10">
+      {/* ── COMPANIES ────────────────────────────────── */}
+      <section style={{ padding: '80px 0', background: 'var(--surface-solid)', borderTop: '1.25px solid var(--border)' }}>
+        <Container>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 36, flexWrap: 'wrap', gap: 14 }}>
             <div>
-                <h2 className="text-3xl font-bold text-slate-900">Fresh Opportunities</h2>
-                <p className="text-slate-500 mt-2">Latest verified English-speaking roles.</p>
+              <p className="font-sketch" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--primary)', marginBottom: 8 }}>Hiring partners</p>
+              <h2 style={{ fontSize: 'clamp(1.5rem,3vw,2.2rem)', fontWeight: 700, color: 'var(--ink)' }}>Companies hiring <span style={{ color: 'var(--primary)' }}>English speakers</span></h2>
             </div>
-            <Link to="/jobs" className="hidden md:flex items-center font-bold text-[#1c54b2] hover:text-blue-800 transition-colors">
-                View all <ChevronRight className="w-4 h-4 ml-1" />
-            </Link>
-        </div>
-
-        {loading ? (
-            <div className="grid grid-cols-1 gap-4">
-                {[1,2,3].map(i => <div key={i} className="h-48 bg-slate-200 rounded-xl animate-pulse"></div>)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Carousel arrows (visible on all viewports) */}
+              <button onClick={() => scrollCarousel('left')} aria-label="Scroll left"
+                style={{ background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 10, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--ink)', transition: 'all 0.22s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink)'; }}>
+                <ChevronLeft size={16} />
+              </button>
+              <button onClick={() => scrollCarousel('right')} aria-label="Scroll right"
+                style={{ background: 'var(--surface-solid)', border: '1.25px solid var(--border)', borderRadius: 10, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--ink)', transition: 'all 0.22s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink)'; }}>
+                <ChevronRight size={16} />
+              </button>
+              <Link to="/directory"><Button variant="ghost">Full directory <ArrowRight size={13} /></Button></Link>
             </div>
-        ) : (
-            <div className="space-y-4">
-                {jobs.map(job => (
-                    <JobCard key={job._id} job={job} />
-                ))}
+          </div>
+
+          {/* Carousel: horizontal scroll with snap on mobile/tablet, wraps on large desktop */}
+          <div ref={carouselRef} className="snap-carousel stagger" style={{ scrollPaddingLeft: 4 }}>
+            {companies.map(c => (
+              <div key={c.companyName} style={{ minWidth: 260, maxWidth: 300, flex: '0 0 auto' }}>
+                <CompanyCard company={c} />
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* ── NEWSLETTER ───────────────────────────────── */}
+      <section style={{ padding: '96px 0', position: 'relative', overflow: 'hidden', background: 'var(--paper)', borderTop: '1.25px solid var(--border)' }}>
+        <div className="orb" style={{ width: 400, height: 400, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--primary-soft)' }} />
+        <Container size="sm" style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+          <div style={{ width: 52, height: 52, background: 'var(--primary-soft)', border: '1.25px solid var(--primary)', borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 24px' }}><Mail size={22} /></div>
+          <h2 style={{ fontSize: 'clamp(1.7rem,4vw,3rem)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.02em', marginBottom: 14 }}>Never miss a job drop.</h2>
+          <p style={{ color: 'var(--muted-ink)', marginBottom: 36, lineHeight: 1.75 }}>Join 2,000+ professionals. Weekly digest of verified English-only jobs. No spam.</p>
+          <form onSubmit={subscribe} style={{ display: 'flex', gap: 8, maxWidth: 420, margin: '0 auto 16px', flexWrap: 'wrap' }}>
+            <input type="email" required placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} disabled={sub === 'busy'}
+              style={{ flex: 1, minWidth: 200, padding: '12px 14px', fontFamily: 'inherit', fontSize: '0.925rem', background: 'var(--surface-solid)', color: 'var(--ink)', border: '1.25px solid var(--border)', borderRadius: 10, outline: 'none' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.boxShadow = 'var(--focus-ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }} />
+            <Button loading={sub === 'busy'}>Subscribe</Button>
+          </form>
+          {sub === 'ok' && <Alert type="success">You're in — check your inbox soon.</Alert>}
+          {sub === 'err' && <Alert type="error">Something went wrong. Please try again.</Alert>}
+        </Container>
+      </section>
+
+      {/* ── LATEST JOBS ──────────────────────────────── */}
+      <section style={{ padding: '80px 0', background: 'var(--surface-solid)', borderTop: '1.25px solid var(--border)' }}>
+        <Container size="lg">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <p className="font-sketch" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--primary)', marginBottom: 8 }}>Fresh picks</p>
+              <h2 style={{ fontSize: 'clamp(1.5rem,3vw,2.2rem)', fontWeight: 700, color: 'var(--ink)' }}>Latest opportunities</h2>
             </div>
-        )}
-
-        <div className="mt-12 text-center">
-            <Link to="/jobs" className="inline-block bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-8 py-3 rounded-lg font-bold transition-all shadow-sm hover:shadow-md">
-                Load More Jobs
-            </Link>
-        </div>
-      </div>
-
+            <Link to="/jobs"><Button variant="ghost">View all <ArrowRight size={13} /></Button></Link>
+          </div>
+          {loading ? <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 140 }} />)}</div>
+            : <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{jobs.map(j => <JobCard key={j._id} job={j} />)}</div>}
+          <div style={{ textAlign: 'center', marginTop: 36 }}><Link to="/jobs"><Button variant="outline">Load more <ArrowRight size={13} /></Button></Link></div>
+        </Container>
+      </section>
     </div>
   );
 }
