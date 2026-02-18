@@ -15,6 +15,7 @@ import AdminCompanies from './pages/AdminCompanies';
 import AddJob from './pages/AddJob';
 import RejectedJobs from './pages/RejectedJobs';
 import AdminDashboard from './pages/AdminDashboard';
+import JobTestLogs from './pages/JobTestLogs';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="add" element={<AddJob />} />
               <Route path="rejected" element={<RejectedJobs />} />
+              <Route path="test-logs" element={<JobTestLogs />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

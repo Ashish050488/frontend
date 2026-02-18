@@ -6,7 +6,8 @@ import { type ReactNode, type CSSProperties, type ButtonHTMLAttributes, type Inp
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Size = 'sm' | 'md' | 'lg';
 type Variant = 'primary' | 'ghost' | 'danger' | 'success' | 'outline';
-type BadgeVariant = 'primary' | 'green' | 'red' | 'yellow' | 'blue' | 'neutral';
+// UPDATED: Added 'acid' to the union type
+type BadgeVariant = 'primary' | 'green' | 'red' | 'yellow' | 'blue' | 'neutral' | 'acid';
 
 // ── Container ─────────────────────────────────────────────────────────────────
 export function Container({ children, size = 'xl', style, className = '' }: {
@@ -51,6 +52,7 @@ const BTN_VARIANT: Record<Variant, CSSProperties> = {
   success: { background: 'var(--success-soft)', color: 'var(--success)', border: '1.25px solid var(--success)' },
   outline: { background: 'transparent', color: 'var(--ink)', border: '1.25px solid var(--ink-border-strong, var(--border-strong))' },
 };
+
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant; size?: Size; loading?: boolean; as?: 'button' | 'a'; href?: string; children: ReactNode;
@@ -176,7 +178,10 @@ const BADGE_STYLE: Record<BadgeVariant, CSSProperties> = {
   yellow: { background: 'var(--warning-soft)', color: 'var(--warning)', border: '1.25px solid var(--warning)' },
   blue: { background: 'var(--info-soft)', color: 'var(--info)', border: '1.25px solid var(--info)' },
   neutral: { background: 'var(--paper2)', color: 'var(--muted-ink)', border: '1.25px solid var(--border)' },
+  // UPDATED: Added style mapping for 'acid'
+  acid: { background: 'var(--acid-soft)', color: 'var(--acid)', border: '1.25px solid var(--acid)' },
 };
+
 export function Badge({ children, variant = 'neutral', style }: { children: ReactNode; variant?: BadgeVariant; style?: CSSProperties }) {
   return (
     <span className="sketch-ink" style={{
